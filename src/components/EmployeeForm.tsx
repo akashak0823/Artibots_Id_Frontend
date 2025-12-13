@@ -338,7 +338,7 @@ export const EmployeeForm: React.FC = () => {
                     <Input
                         label="Email ID"
                         type="email"
-                        placeholder="john@example.com"
+                        placeholder="user@gmail.com"
                         registration={register("email")}
                         error={errors.email?.message}
                         required
@@ -717,7 +717,7 @@ export const EmployeeForm: React.FC = () => {
                         />
                         <Input
                             label="Nominee Name (for PF & ESI)"
-                            placeholder="e.g. Jane Doe"
+                            placeholder="e.g. family member name"
                             registration={register("nomineeName")}
                             error={errors.nomineeName?.message}
                             required
@@ -820,3 +820,4 @@ export const EmployeeForm: React.FC = () => {
         </div>
     );
 };
+
