@@ -55,7 +55,7 @@ export const employeeSchema = z.object({
     department: z.string().min(2, "Department is required"),
     designation: z.string().min(2, "Designation is required"),
     joiningDate: z.string().refine((val) => !isNaN(Date.parse(val)), "Joining Date is required"),
-    bloodGroup: z.enum(["O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-"], { message: "Blood Group is required" }),
+    bloodGroup: z.string().min(1, { message: "Blood Group is required" }),
 
     // Bank & Nominee
     bankName: z.string().min(2, "Bank Name is required"),

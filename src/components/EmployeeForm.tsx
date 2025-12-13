@@ -19,17 +19,18 @@ export const EmployeeForm: React.FC = () => {
     const [editMarital, setEditMarital] = useState<"Single" | "Married" | "">("");
     const [editEmployment, setEditEmployment] = useState<"Employed" | "Unemployed" | "">("");
 
-    // Spouse state
-    const [spousesList, setSpousesList] = useState<{ name: string; maritalStatus: "Single" | "Married" | ""; employmentStatus: "Employed" | "Unemployed" | "" }[]>([]);
-    const [spouseInput, setSpouseInput] = useState("");
-    const [selectedSpouseName, setSelectedSpouseName] = useState("");
-    const [editSpouseMarital, setEditSpouseMarital] = useState<"Single" | "Married" | "">("");
-    const [editSpouseEmployment, setEditSpouseEmployment] = useState<"Employed" | "Unemployed" | "">("");
+    // Children state
+    const [childrenList, setChildrenList] = useState<{ name: string; gender: "Male" | "Female" | ""; dob: string }[]>([]);
+    const [childInput, setChildInput] = useState({ name: "", gender: "Male" as "Male" | "Female", dob: "" });
+
+    // Spouse State (since we use react-hook-form, we might not need local state for simple inputs unless we want controlled inputs for conditional rendering, but 'watch' handles that. We just need to register them.)
+
 
     // Children state
 
 
     const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+    const [isBloodGroupOther, setIsBloodGroupOther] = useState(false);
 
     const {
         register,
@@ -75,19 +76,7 @@ export const EmployeeForm: React.FC = () => {
         }
     }, [selectedSiblingName, siblingsList]);
 
-    // Effect: Sync editor state when a spouse is selected
-    React.useEffect(() => {
-        if (selectedSpouseName) {
-            const sp = spousesList.find(s => s.name === selectedSpouseName);
-            if (sp) {
-                setEditSpouseMarital(sp.maritalStatus);
-                setEditSpouseEmployment(sp.employmentStatus);
-            } else {
-                setEditSpouseMarital("");
-                setEditSpouseEmployment("");
-            }
-        }
-    }, [selectedSpouseName, spousesList]);
+
 
     const addSibling = () => {
         if (siblingInput.trim()) {
@@ -135,45 +124,23 @@ export const EmployeeForm: React.FC = () => {
         showToast(`Details saved for ${selectedSiblingName}`, "success");
     };
 
-    const addSpouse = () => {
-        if (spouseInput.trim()) {
-            // Limit to 1 spouse usually, but logically 'like siblings' allows list. 
-            // We'll allow list but user likely adds one.
-            if (spousesList.some(s => s.name.toLowerCase() === spouseInput.trim().toLowerCase())) {
-                showToast("Spouse already exists", "error");
-                return;
-            }
-            const newList = [...spousesList, { name: spouseInput.trim(), maritalStatus: "" as const, employmentStatus: "" as const }];
-            setSpousesList(newList);
-            setSpouseInput("");
+    const addChild = () => {
+        if (childInput.name.trim()) {
+            const newList = [...childrenList, { ...childInput, name: childInput.name.trim() }];
+            setChildrenList(newList);
+            setChildInput({ name: "", gender: "Male", dob: "" });
+            // @ts-ignore
+            setValue("children", newList);
+        } else {
+            showToast("Please enter child name", "error");
         }
     };
 
-    const removeSpouse = (index: number) => {
-        const newList = spousesList.filter((_, i) => i !== index);
-        setSpousesList(newList);
-        if (selectedSpouseName && spousesList[index].name === selectedSpouseName) {
-            setSelectedSpouseName("");
-        }
-    };
-
-    const saveSpouseDetails = () => {
-        if (!selectedSpouseName) return;
-        if (!editSpouseMarital || !editSpouseEmployment) {
-            showToast("Please select both statuses for the spouse", "error");
-            return;
-        }
-
-        const updatedList = spousesList.map(s =>
-            s.name === selectedSpouseName
-                ? { ...s, maritalStatus: editSpouseMarital, employmentStatus: editSpouseEmployment }
-                : s
-        );
-
-        setSpousesList(updatedList);
-        // We'll sync to form values at submit or here if we mapped to hidden fields. 
-        // For now, local state handles it until submit.
-        showToast(`Details saved for ${selectedSpouseName}`, "success");
+    const removeChild = (index: number) => {
+        const newList = childrenList.filter((_, i) => i !== index);
+        setChildrenList(newList);
+        // @ts-ignore
+        setValue("children", newList);
     };
 
 
@@ -208,20 +175,25 @@ export const EmployeeForm: React.FC = () => {
             // Explicitly handle siblings (they are already in 'data' but might filter empty ones if needed)
             // The hook form 'data' object already contains the siblings array.
 
-            // Handle Spouse List -> Single Mapping
-            if (data.maritalStatus === "Married" && spousesList.length > 0) {
-                // Take the last one or first one? Usually 1.
-                const mainSpouse = spousesList[0];
-                textData['spouseName'] = mainSpouse.name;
-                textData['spouseMaritalStatus'] = mainSpouse.maritalStatus;
-                textData['spouseEmploymentStatus'] = mainSpouse.employmentStatus;
+            // Handle Children
+            if (childrenList.length > 0) {
+                textData['children'] = childrenList;
+            }
+
+            // Handle Spouse (handled by RHF register, but ensured here)
+            if (data.maritalStatus === "Married") {
+                // Should already be in data, but let's ensure redundant matching if needed or just trust RHF
+            } else {
+                // If single, remove spouse fields if they exist
+                delete textData['spouseName'];
+                delete textData['spouseEmploymentStatus'];
             }
 
             // Append JSON string
             formData.append('data', JSON.stringify(textData));
 
             // Real API call
-            const response = await fetch('https://id-form-backend.onrender.com/api/employees', {
+            const response = await fetch('http://localhost:4000/api/employees', {
                 method: 'POST',
                 body: formData,
             });
@@ -260,8 +232,8 @@ export const EmployeeForm: React.FC = () => {
                     </div>
                 </div>
 
-                <h1 className="text-4xl font-extrabold text-gray-600 mb-1 tracking-tight uppercase">
-                    ARTIBOT<span className="text-cyan-500">S</span>
+                <h1 className="text-4xl font-extrabold text-black mb-1 tracking-tight uppercase" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                    ARTIBOTS
                 </h1>
                 <h2 className="text-2xl font-bold text-gray-700 mb-2">
                     Employee Identity Card Form
@@ -338,7 +310,7 @@ export const EmployeeForm: React.FC = () => {
                     <Input
                         label="Email ID"
                         type="email"
-                        placeholder="user@gmail.com"
+                        placeholder="name@gmail.com"
                         registration={register("email")}
                         error={errors.email?.message}
                         required
@@ -403,154 +375,104 @@ export const EmployeeForm: React.FC = () => {
                         required
                     />
 
-                    {/* Conditional Family Logic */}
-                    {maritalStatus === "Married" ? (
-                        <>
-                            <div className="bg-cyan-50/50 p-6 rounded-2xl border border-cyan-100 mb-6 space-y-5 shadow-sm">
-                                <h4 className="flex items-center gap-2 font-bold text-gray-700 border-b border-cyan-100 pb-3 mb-2">
-                                    <span className="text-xl">💍</span> Spouse Details
-                                </h4>
 
-                                {/* Spouse Name Input & Add */}
-                                <div className="flex flex-col gap-1.5">
-                                    <label className="text-sm font-semibold text-gray-700">Add Spouse Name</label>
-                                    <div className="flex gap-2">
+                    {/* Spouse Details (Only if Married) */}
+                    {maritalStatus === "Married" && (
+                        <div className="bg-white p-6 rounded-2xl border border-gray-100 mb-6 space-y-5 shadow-sm">
+                            <h4 className="flex items-center gap-2 font-bold text-gray-700 border-b border-gray-100 pb-3 mb-2">
+                                <span className="text-xl">💍</span> Spouse Details
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <Input
+                                    label="Spouse Name"
+                                    registration={register("spouseName")}
+                                    error={errors.spouseName?.message}
+                                />
+                                <Select
+                                    label="Spouse Employment Status"
+                                    options={[
+                                        { value: "Employed", label: "Employed" },
+                                        { value: "Unemployed", label: "Unemployed" }
+                                    ]}
+                                    registration={register("spouseEmploymentStatus")}
+                                    error={errors.spouseEmploymentStatus?.message}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Children Management - Linked to Marital Status */}
+                    {maritalStatus === "Married" && (
+                        <div className="bg-white p-6 rounded-2xl border border-gray-100 mb-6 space-y-5 shadow-sm mt-6">
+                            <h4 className="flex items-center gap-2 font-bold text-gray-700 border-b border-gray-100 pb-3 mb-2">
+                                <span className="text-xl">👶</span> Children Details
+                            </h4>
+
+                            <div className="flex flex-col gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white p-4 rounded-xl border border-gray-100">
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-sm font-semibold text-gray-700">Child Name</label>
                                         <input
                                             type="text"
-                                            value={spouseInput}
-                                            onChange={(e) => setSpouseInput(e.target.value)}
-                                            placeholder="Enter spouse name"
-                                            className="flex-1 px-4 py-2.5 rounded-xl border bg-white/50 border-gray-200 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 outline-none"
+                                            value={childInput.name}
+                                            onChange={(e) => setChildInput({ ...childInput, name: e.target.value })}
+                                            placeholder="Name"
+                                            className="px-4 py-2 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-purple-500/20"
                                         />
+                                    </div>
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-sm font-semibold text-gray-700">Gender</label>
+                                        <select
+                                            value={childInput.gender}
+                                            onChange={(e) => setChildInput({ ...childInput, gender: e.target.value as any })}
+                                            className="px-4 py-2 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-purple-500/20"
+                                        >
+                                            <option value="Male">Male</option>
+                                            <option value="Female">Female</option>
+                                        </select>
+                                    </div>
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-sm font-semibold text-gray-700">Date of Birth</label>
+                                        <input
+                                            type="date"
+                                            value={childInput.dob}
+                                            onChange={(e) => setChildInput({ ...childInput, dob: e.target.value })}
+                                            className="px-4 py-2 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-purple-500/20"
+                                        />
+                                    </div>
+                                    <div className="md:col-span-3">
                                         <button
                                             type="button"
-                                            onClick={addSpouse}
-                                            className="px-4 py-2 bg-cyan-600 text-white rounded-xl hover:bg-cyan-700 transition flex items-center gap-2 font-medium"
+                                            onClick={addChild}
+                                            className="w-full py-2 bg-cyan-600 text-white rounded-xl hover:bg-cyan-700 transition font-medium flex items-center justify-center gap-2"
                                         >
-                                            <Plus size={18} /> Add
+                                            <Plus size={18} /> Add Child
                                         </button>
-                                    </div>
-                                    <div className="flex flex-wrap gap-2 mt-2">
-                                        {spousesList.map((sp, idx) => (
-                                            <div key={idx} className="flex items-center gap-2 bg-cyan-50 text-cyan-800 px-3 py-1 rounded-full text-sm font-medium border border-cyan-100">
-                                                <span>{sp.name}</span>
-                                                {sp.maritalStatus && sp.employmentStatus && (
-                                                    <span className="text-green-600 text-[10px] uppercase font-bold tracking-wider ml-1 bg-green-100 px-1 rounded">Saved</span>
-                                                )}
-                                                <button type="button" onClick={() => removeSpouse(idx)} className="text-cyan-400 hover:text-red-500 ml-1">
-                                                    <Trash2 size={14} />
-                                                </button>
-                                            </div>
-                                        ))}
                                     </div>
                                 </div>
 
-                                {/* Spouse Details Editor */}
-                                {spousesList.length > 0 && (
-                                    <div className="bg-slate-800/80 p-5 rounded-2xl border border-slate-700 mt-4 space-y-4 backdrop-blur-sm">
-                                        <div className="flex flex-col gap-1.5">
-                                            <label className="text-sm font-semibold text-slate-300 ml-1">Select Spouse to Edit Details</label>
-                                            <div className="relative">
-                                                <select
-                                                    className="w-full px-4 py-2.5 rounded-xl border bg-slate-900/50 border-slate-700 text-white focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 outline-none transition-all duration-200 appearance-none"
-                                                    value={selectedSpouseName}
-                                                    onChange={(e) => setSelectedSpouseName(e.target.value)}
-                                                >
-                                                    <option value="" className="bg-slate-800 text-slate-400">-- Select Spouse --</option>
-                                                    {spousesList.map(s => (
-                                                        <option key={s.name} value={s.name} className="bg-slate-800 text-white">{s.name}</option>
-                                                    ))}
-                                                </select>
-                                                <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-400">
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                                                    </svg>
-                                                </div>
+                                {/* List of Children */}
+                                <div className="space-y-2">
+                                    {childrenList.map((child, idx) => (
+                                        <div key={idx} className="flex items-center justify-between bg-white p-3 rounded-lg border border-purple-100 shadow-sm">
+                                            <div className="flex items-center gap-4">
+                                                <span className="font-medium text-gray-800">{child.name}</span>
+                                                <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">{child.gender}</span>
+                                                {child.dob && <span className="text-xs text-gray-500">DOB: {child.dob}</span>}
                                             </div>
+                                            <button type="button" onClick={() => removeChild(idx)} className="text-red-400 hover:text-red-600 p-1">
+                                                <Trash2 size={16} />
+                                            </button>
                                         </div>
-
-                                        {selectedSpouseName && (
-                                            <motion.div
-                                                initial={{ opacity: 0, height: 0 }}
-                                                animate={{ opacity: 1, height: "auto" }}
-                                                className="space-y-4 pt-4 border-t border-slate-700"
-                                            >
-                                                <div className="flex items-center justify-between">
-                                                    <h4 className="font-semibold text-slate-300">Details for <span className="text-cyan-400 underline decoration-cyan-500/50">{selectedSpouseName}</span></h4>
-                                                </div>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                    {/* Spouse Marital Status - Radio Style */}
-                                                    <div className="flex flex-col gap-1.5">
-                                                        <label className="text-sm font-semibold text-slate-400 ml-1">Spouse Marital Status</label>
-                                                        <div className="flex gap-4">
-                                                            {["Single", "Married"].map((status) => (
-                                                                <label
-                                                                    key={status}
-                                                                    className={`flex items-center gap-2 cursor-pointer px-4 py-2.5 rounded-xl border transition-all duration-200 ${editSpouseMarital === status
-                                                                        ? "bg-slate-700 border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.2)]"
-                                                                        : "bg-slate-800 border-slate-600 hover:border-cyan-400/50 hover:bg-slate-700/50"
-                                                                        }`}
-                                                                >
-                                                                    <input
-                                                                        type="radio"
-                                                                        name="spouse_marital_edit"
-                                                                        value={status}
-                                                                        checked={editSpouseMarital === status}
-                                                                        onChange={() => setEditSpouseMarital(status as any)}
-                                                                        className="w-4 h-4 text-cyan-400 accent-cyan-400 bg-slate-900 border-slate-600 focus:ring-cyan-400/20"
-                                                                    />
-                                                                    <span className={`text-sm font-medium ${editSpouseMarital === status ? "text-cyan-400" : "text-slate-300"}`}>{status}</span>
-                                                                </label>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Spouse Employment Status - Radio Style */}
-                                                    <div className="flex flex-col gap-1.5">
-                                                        <label className="text-sm font-semibold text-slate-400 ml-1">Spouse Employment Status</label>
-                                                        <div className="flex gap-4">
-                                                            {["Employed", "Unemployed"].map((status) => (
-                                                                <label
-                                                                    key={status}
-                                                                    className={`flex items-center gap-2 cursor-pointer px-4 py-2.5 rounded-xl border transition-all duration-200 ${editSpouseEmployment === status
-                                                                        ? "bg-slate-700 border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.2)]"
-                                                                        : "bg-slate-800 border-slate-600 hover:border-cyan-400/50 hover:bg-slate-700/50"
-                                                                        }`}
-                                                                >
-                                                                    <input
-                                                                        type="radio"
-                                                                        name="spouse_employment_edit"
-                                                                        value={status}
-                                                                        checked={editSpouseEmployment === status}
-                                                                        onChange={() => setEditSpouseEmployment(status as any)}
-                                                                        className="w-4 h-4 text-cyan-400 accent-cyan-400 bg-slate-900 border-slate-600 focus:ring-cyan-400/20"
-                                                                    />
-                                                                    <span className={`text-sm font-medium ${editSpouseEmployment === status ? "text-cyan-400" : "text-slate-300"}`}>{status}</span>
-                                                                </label>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <button
-                                                    type="button"
-                                                    onClick={saveSpouseDetails}
-                                                    className="w-full py-3 bg-cyan-500 text-white rounded-xl hover:bg-cyan-400 hover:shadow-[0_0_20px_rgba(34,211,238,0.4)] transition-all duration-300 font-bold tracking-wide shadow-lg shadow-cyan-500/20"
-                                                >
-                                                    Save Details for {selectedSpouseName}
-                                                </button>
-                                            </motion.div>
-                                        )}
-                                    </div>
-                                )}
+                                    ))}
+                                </div>
                             </div>
+                        </div>
+                    )}
 
-                            {/* Children Management */}
-
-                        </>
-                    ) : (
-                        /* Sibling Management (Default/Unmarried) */
-                        <div className="md:col-span-2 space-y-4 pt-2 border-t border-gray-100">
+                    {/* Sibling Management (Hidden if Married) */}
+                    {maritalStatus !== "Married" && (
+                        <div className="md:col-span-2 space-y-4 pt-2 border-t border-gray-100 mt-6">
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-sm font-semibold text-gray-700">Siblings</label>
                                 <div className="flex gap-2">
@@ -656,8 +578,6 @@ export const EmployeeForm: React.FC = () => {
                             )}
                         </div>
                     )}
-
-
                 </Section>
 
                 {/* 4. Job Details */}
@@ -683,11 +603,33 @@ export const EmployeeForm: React.FC = () => {
                     />
                     <Select
                         label="Blood Group"
-                        options={["O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-"].map(bg => ({ value: bg, label: bg }))}
-                        registration={register("bloodGroup")}
+                        options={["O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-", "Others"].map(bg => ({ value: bg, label: bg }))}
+                        registration={register("bloodGroup", {
+                            onChange: (e) => {
+                                const selectedValue = e.target.value;
+                                setIsBloodGroupOther(selectedValue === "Others");
+                                // If "Others" is selected, clear the current bloodGroup value
+                                // It will be filled by the "Specify Blood Group" input
+                                if (selectedValue === "Others") {
+                                    setValue("bloodGroup", ""); // Clear it initially
+                                }
+                            }
+                        })}
                         error={errors.bloodGroup?.message}
                         required
                     />
+                    {isBloodGroupOther && (
+                        <div className="col-span-1 md:col-span-1">
+                            <Input
+                                label="Specify Blood Group"
+                                placeholder="Enter Blood Group"
+                                registration={register("bloodGroup", {
+                                    required: "Please specify your blood group",
+                                    validate: (value) => value !== "Others" || "Please specify your blood group"
+                                })}
+                            />
+                        </div>
+                    )}
                 </Section>
 
                 {/* 5. Bank & Nominee Details */}
@@ -717,7 +659,7 @@ export const EmployeeForm: React.FC = () => {
                         />
                         <Input
                             label="Nominee Name (for PF & ESI)"
-                            placeholder="e.g. family member name"
+                            placeholder="e.g. enter family member name"
                             registration={register("nomineeName")}
                             error={errors.nomineeName?.message}
                             required
@@ -820,4 +762,3 @@ export const EmployeeForm: React.FC = () => {
         </div>
     );
 };
-
