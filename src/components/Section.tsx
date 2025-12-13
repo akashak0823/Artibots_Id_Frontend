@@ -7,22 +7,21 @@ interface SectionProps {
     children: React.ReactNode;
     className?: string;
     delay?: number;
+    icon?: React.ReactNode;
 }
 
-export const Section: React.FC<SectionProps> = ({ title, children, className, delay = 0 }) => {
+export const Section: React.FC<SectionProps> = ({ title, icon, children, className }) => {
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay }}
-            className={cn("bg-white/80 backdrop-blur-md shadow-lg rounded-2xl p-6 border border-white/20 mb-6", className)}
-        >
-            <h2 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2 border-gray-200/50">
+        <div className={cn("bg-white p-8 rounded-2xl shadow-sm border border-cyan-100", className)}>
+            <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-cyan-800 border-b border-cyan-50 pb-2">
+                <span className="p-2 bg-cyan-50 rounded-lg text-cyan-600">
+                    {icon}
+                </span>
                 {title}
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            </h3>
+            <div className="space-y-6">
                 {children}
             </div>
-        </motion.div>
+        </div>
     );
 };

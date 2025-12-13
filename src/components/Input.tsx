@@ -19,13 +19,13 @@ export const Input: React.FC<InputProps> = ({
     ...props
 }) => {
     return (
-        <div className={cn("flex flex-col gap-1.5", wrapperClassName)}>
+        <div className="flex flex-col gap-1.5">
             <label className="text-sm font-semibold text-gray-700">
                 {label} {props.required && <span className="text-red-500">*</span>}
             </label>
             <input
                 className={cn(
-                    "px-4 py-2.5 rounded-xl border bg-white/50 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all duration-200",
+                    "w-full px-4 py-2.5 rounded-xl border bg-white/50 border-gray-200 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 outline-none transition-all duration-200",
                     error ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : "",
                     className
                 )}

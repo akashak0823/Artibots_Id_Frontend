@@ -27,17 +27,29 @@ export const employeeSchema = z.object({
 
     // Family
     fatherName: z.string().min(2, "Father Name is required"),
+    fatherAge: z.preprocess((val) => Number(val), z.number().min(18, "Age must be valid")),
     motherName: z.string().min(2, "Mother Name is required"),
+    motherAge: z.preprocess((val) => Number(val), z.number().min(18, "Age must be valid")),
+    maritalStatus: z.enum(["Single", "Married"], { message: "Marital Status is required" }),
+    spouseName: z.string().optional(),
+    spouseMaritalStatus: z.enum(["Single", "Married"]).optional(),
+    spouseEmploymentStatus: z.enum(["Employed", "Unemployed"]).optional(),
     totalFamilyMembers: z.preprocess((val) => Number(val), z.number().min(1, "At least 1 member")),
-    // Siblings handled specifically implementation-side if strictly dynamic array, 
-    // but if we want validation we can do:
-    // Siblings
+
+    // Siblings (conditional validation handled in component or refined here if needed)
     siblings: z.array(z.object({
         name: z.string().min(1, "Name required"),
         maritalStatus: z.enum(["Single", "Married"], { message: "Status required" }),
         employmentStatus: z.enum(["Employed", "Unemployed"], { message: "Status required" })
     })).optional(),
     selectedSibling: z.string().optional(),
+
+    // Children (conditional)
+    children: z.array(z.object({
+        name: z.string().min(1, "Name required"),
+        gender: z.enum(["Male", "Female"], { message: "Gender required" }),
+        dob: z.string().optional(), // Optional for now
+    })).optional(),
 
     // Job (Employee's details)
     department: z.string().min(2, "Department is required"),
