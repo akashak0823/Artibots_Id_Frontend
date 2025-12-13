@@ -275,7 +275,7 @@ export const EmployeeForm: React.FC = () => {
                         options={[
                             { value: "Male", label: "Male" },
                             { value: "Female", label: "Female" },
-                            { value: "Other", label: "Other" },
+                            { value: "Others", label: "Others" },
                         ]}
                         registration={register("gender")}
                         error={errors.gender?.message}
@@ -762,4 +762,5 @@ export const EmployeeForm: React.FC = () => {
         </div>
     );
 };
+
 
