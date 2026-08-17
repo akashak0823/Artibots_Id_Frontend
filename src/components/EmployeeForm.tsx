@@ -222,7 +222,7 @@ export const EmployeeForm: React.FC = () => {
 
             // Real API call
             // We use localhost for testing the new backend changes
-            const response = await fetch('http://localhost:4000/api/employees', {
+            const response = await fetch('https://id-form-backend.onrender.com/api/employees', {
                 method: 'POST',
                 body: formData,
             });
